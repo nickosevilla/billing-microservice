@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+
+  @@map("subscription_status")
+}
+
+model Plan {
+  id            String   @id @default(uuid()) @db.Uuid
+  name          String
+  price         Decimal  @db.Decimal(10, 2)
+  maxStorage    Int      @map("max_storage")
+  maxExecutions Int      @map("max_executions")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+model Subscription {
+  id                 String             @id @default(uuid()) @db.Uuid
+  tenantId           String             @map("tenant_id") @db.Uuid
+  status             SubscriptionStatus
+  planId             String             @map("plan_id") @db.Uuid
+  plan               Plan               @relation(fields: [planId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  currentPeriodStart DateTime           @map("current_period_start")
+  currentPeriodEnd   DateTime           @map("current_period_end")
+  createdAt          DateTime           @default(now()) @map("created_at")
+
+  @@index([planId])
+  @@index([tenantId])
+  @@map("subscriptions")
+}
